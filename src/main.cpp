@@ -5,12 +5,14 @@
 #include <MFRC522.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <TridentTD_LineNotify.h>
 
 #define SS_PIN  21  
 #define RST_PIN 22 
 #define TFT_GREY 0x5AEB // New colour
 #define RXD2 16
 #define TXD2 17
+#define LINE_TOKEN "5jbTrnjtkPoK04oaLkOhbL83vyoI400BDmOgWCHdhsy"
 
 MFRC522 rfid(SS_PIN, RST_PIN);
 TFT_eSPI tft = TFT_eSPI();       // Invoke custom library
@@ -43,6 +45,8 @@ void setup(void) {
   Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
 
+  LINE.setToken(LINE_TOKEN);
+
   //Begin serial communication Neo6mGPS
   neogps.begin(9600, SERIAL_8N1, RXD2, TXD2);
   
@@ -69,6 +73,7 @@ void httpPostToThingSpeak(String rfids,float lat, float longi) {
   }else if(httpResponseCode == -1){
     Serial.println("Channel update failed.");
   }
+
 
   http.end();
 }
@@ -131,37 +136,6 @@ void drawWaitingAnimation() {
     tft.fillScreen(TFT_BLACK);
 }
 
-// void writeDB(byte id, byte latitude, byte longitude){
-//   if ((millis() - lastTime) > timerDelay) {
-//     //Check WiFi connection status
-//     if(WiFi.status()== WL_CONNECTED){
-//       WiFiClient client;
-//       HTTPClient http;
-    
-//       // Your Domain name with URL path or IP address with path
-//       http.begin(client, serverName);
-      
-//       // Specify content-type header
-//       http.addHeader("Content-Type", "application/json");
-
-//       // JSON data to send with HTTP POST
-//       String httpRequestData = "{\"RFID\":\"" + String(id) + "\",\"lat\":\"" + String(latitude) + "\",\"long\":\"" + String(longitude) + "\"}";        
-//       // Send HTTP POST request
-//       int httpResponseCode = http.POST(httpRequestData);
-     
-//       Serial.print("HTTP Response code: ");
-//       Serial.println(httpResponseCode);
-        
-//       // Free resources
-//       http.end();
-//     }
-//     else {
-//       Serial.println("WiFi Disconnected");
-//     }
-//     lastTime = millis();
-//   }
-// }
-
 void loop() {
   tft.setTextColor(TFT_WHITE,TFT_BLACK);  tft.setTextSize(2);
 
@@ -210,6 +184,7 @@ void loop() {
       rfid.PCD_StopCrypto1(); // stop encryption on PCD
       currentID = "";
       scan = !scan;
+      LINE.notify("Your Package Arrived");
       }
     }
   }
