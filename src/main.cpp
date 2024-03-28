@@ -73,8 +73,6 @@ void httpPostToThingSpeak(String rfids,float lat, float longi) {
   }else if(httpResponseCode == -1){
     Serial.println("Channel update failed.");
   }
-
-
   http.end();
 }
 
@@ -214,6 +212,8 @@ void loop() {
 
     rfid.PICC_HaltA(); // halt PICC
     rfid.PCD_StopCrypto1(); // stop encryption on PCD
+
+    LINE.notify("Your Package is on the way");
 
     scan = !scan;
     delay(2000);
