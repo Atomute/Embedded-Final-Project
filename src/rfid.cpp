@@ -1,14 +1,16 @@
 #include <SPI.h>
 #include <TFT_eSPI.h> // Hardware-specific library
 #include <Wire.h>
-#include <TinyGPS++.h>
 #include <MFRC522.h>
 #include <WiFi.h>
-#include <HTTPClient.h>
 #include <TridentTD_LineNotify.h>
 
 #define SS_PIN  21  
 #define RST_PIN 22
+#define LINE_TOKEN "5jbTrnjtkPoK04oaLkOhbL83vyoI400BDmOgWCHdhsy"
+
+const char* ssid = "Atom";
+const char* password = "12345678";
 
 MFRC522 rfid(SS_PIN, RST_PIN);
 TFT_eSPI tft = TFT_eSPI(); 
@@ -40,6 +42,18 @@ void drawWaitingAnimation() {
 }
 
 void setup(void){
+    WiFi.begin(ssid, password);
+    Serial.println("Connecting");
+    while(WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println("");
+    Serial.print("Connected to WiFi network with IP Address: ");
+    Serial.println(WiFi.localIP());
+
+    LINE.setToken(LINE_TOKEN);
+
     tft.init();
     tft.setRotation(2);
     tft.fillScreen(TFT_BLACK);
@@ -72,6 +86,7 @@ void loop(){
         Serial.println(currentID);
         tft.println(currentID);
         tft.println("Start Tracking");
+        LINE.notify("Start Tracking");
 
         rfid.PICC_HaltA(); // halt PICC
         rfid.PCD_StopCrypto1(); // stop encryption on PCD
@@ -123,6 +138,7 @@ void loop(){
         tft.fillScreen(TFT_BLACK);
 
         tft.println(currentID);
+        LINE.notify("Package Arrived At Destination");
         currentID = "";
         scan = !scan;
         delay(2000);
