@@ -109,7 +109,21 @@ void loop(){
         delay(5000);
         tft.fillScreen(TFT_BLACK);
 
+        tft.println("Lat: 13.821209");
+
+        tft.println("Lng: 100.514915");
+
+        tft.println("Speed: 1.19");
+        
+        tft.println("SAT: 4");
+
+        tft.println("ALT: 56");
+
+        delay(5000);
+        tft.fillScreen(TFT_BLACK);
+
         tft.println(currentID);
+        currentID = "";
         scan = !scan;
         delay(2000);
         tft.fillScreen(TFT_BLACK);
