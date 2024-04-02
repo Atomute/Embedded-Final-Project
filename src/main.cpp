@@ -85,24 +85,24 @@ void print_speed(){
   tft.setCursor(0, 0, 2);    
   if (gps.location.isValid())
   { 
-//    tft.println("Lat: ");
+    tft.println("Lat: ");
     double lat = gps.location.lat();
-//    tft.println(lat);
-//
-//    tft.println("Lng: ");
-    double lng = gps.location.lat();
-//    tft.println(lng);
-//
-//    tft.println("Speed: ");
-//    tft.println(gps.speed.kmph());
-//    
-//    tft.println("SAT:");
-//    tft.println(gps.satellites.value());
-//
-//    tft.println("ALT:");
-//    tft.println(gps.altitude.meters(), 0);
+    tft.println(lat,6);
 
-      httpPostToThingSpeak(currentID,lat,lng);
+    tft.println("Lng: ");
+    double lng = gps.location.lat();
+    tft.println(lng,6);
+
+    tft.println("Speed: ");
+    tft.println(gps.speed.kmph());
+    
+    tft.println("SAT:");
+    tft.println(gps.satellites.value());
+
+    tft.println("ALT:");
+    tft.println(gps.altitude.meters(), 0);
+
+    httpPostToThingSpeak(currentID,lat,lng);
   }
   else
   {
@@ -164,22 +164,29 @@ void loop() {
     
     if(rfid.PICC_IsNewCardPresent()){
       if (rfid.PICC_ReadCardSerial()) { // NUID has been readed
-        tft.fillScreen(TFT_BLACK);
-        tft.setCursor(0, 0, 2);  
-        MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
-        tft.print("RFID/NFC: ");
-        tft.println(rfid.PICC_GetTypeName(piccType));
-  
-        // print UID in tft Monitor in the hex format
-        tft.print("UID:");
-        tft.print(currentID);
-        tft.println();
-  
-        rfid.PICC_HaltA(); // halt PICC
-        rfid.PCD_StopCrypto1(); // stop encryption on PCD
-        currentID = "";
-        scan = !scan;
-        LINE.notify("Your Package Arrived");
+        String newID = "";
+        for (int i = 0; i < rfid.uid.size; i++) {
+          zeroOrSpace = rfid.uid.uidByte[i] < 0x10 ? "0" : "";
+          newID = newID + zeroOrSpace;
+          newID = newID + rfid.uid.uidByte[i];
+        }
+        if (newID == currentID){
+          tft.fillScreen(TFT_BLACK);
+          tft.setCursor(0, 0, 2); 
+
+          tft.print("UID:");
+          tft.print(currentID);
+          tft.println();
+    
+          rfid.PICC_HaltA(); // halt PICC
+          rfid.PCD_StopCrypto1(); // stop encryption on PCD
+          currentID = "";
+          scan = !scan;
+          LINE.notify("Your Package Arrived");
+        }else{
+          rfid.PICC_HaltA(); // halt PICC
+          rfid.PCD_StopCrypto1(); // stop encryption on PCD
+        }
       }
     }
   }
@@ -192,9 +199,9 @@ void loop() {
 
   if (rfid.PICC_ReadCardSerial()) { // NUID has been readed
     tft.setCursor(0, 0, 2);
-    MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
-    tft.print("RFID/NFC: ");
-    tft.println(rfid.PICC_GetTypeName(piccType));
+//    MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
+//    tft.print("RFID/NFC: ");
+//    tft.println(rfid.PICC_GetTypeName(piccType));
 
     tft.print("UID:");
     for (int i = 0; i < rfid.uid.size; i++) {
@@ -204,7 +211,6 @@ void loop() {
     }
     Serial.println(currentID);
     tft.println(currentID);
-    tft.println(scan);
 
     rfid.PICC_HaltA(); // halt PICC
     rfid.PCD_StopCrypto1(); // stop encryption on PCD
