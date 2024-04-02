@@ -34,26 +34,27 @@ const char* serverName = "http://api.thingspeak.com/update";
 
 void setup(void) {
   Serial.begin(115200);
+  tft.init();
+  tft.setRotation(2);
+  tft.fillScreen(TFT_BLACK);
+  tft.setCursor(0, 0, 2);
 
   WiFi.begin(ssid, password);
-  Serial.println("Connecting");
+  tft.print("Connecting");
   while(WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    tft.print(".");
   }
-  Serial.println("");
-  Serial.print("Connected to WiFi network with IP Address: ");
-  Serial.println(WiFi.localIP());
+  tft.println("");
+  tft.print("Connected to WiFi network with IP Address: ");
+  tft.println(WiFi.localIP());
+  tft.fillScreen(TFT_BLACK);
+  tft.setCursor(0, 0, 2);
 
   LINE.setToken(LINE_TOKEN);
 
   //Begin serial communication Neo6mGPS
   neogps.begin(9600, SERIAL_8N1, RXD2, TXD2);
-  
-  tft.init();
-  tft.setRotation(2);
-  tft.fillScreen(TFT_BLACK);
-  tft.setCursor(0, 0, 2);
 
   SPI.begin(); // init SPI bus
   rfid.PCD_Init(); // init MFRC522
@@ -61,54 +62,53 @@ void setup(void) {
   delay(2000);
 }
 
-void httpPostToThingSpeak(String rfids,float lat, float longi) {
-  HTTPClient http;
+void httpPostToThingSpeak(String rfids,float lati, float longi) {
+  HTTPClient https;
+  //Prepare Http
+  tft.println(String(lati,6));
+  tft.println(String(longi,6));
+  String STR_HTTP = "https://api.thingspeak.com/update?api_key=B9N3YB53DRL3NG2C&field1=" + rfids + "&field2=" + String(lati,6) + "&field3=" + String(longi,6);
+  tft.println(STR_HTTP);
 
-  http.begin(client, serverName);
-  http.addHeader("Content-Type", "application/x-www-form-urlencode");
-  String httpRequestData = "api_key=" + apiKey + "&field1=" + String(rfids) + "&field2=" + String(lat) + "&field3=" + String(longi);
-  int httpResponseCode = http.POST(httpRequestData);
-  if(httpResponseCode == 200){
-    Serial.println("Channel update successful.");
-  }else if(httpResponseCode == -1){
-    Serial.println("Channel update failed.");
+  if (https.begin(STR_HTTP)) { // HTTPS
+    Serial.print("[HTTPS] GET...\n");
+    int httpCode = https.GET();
+    tft.printf("[HTTPS] GET... code: %d\n", httpCode);
+    https.end();
   }
-  http.end();
 }
 
 unsigned int halfSecond = 0;
 
-void print_speed(){       
+void print_speed(){  
+  tft.fillScreen(TFT_BLACK);
+  tft.setCursor(0, 0, 2);    
   if (gps.location.isValid())
   { 
-    tft.println("Lat: ");
+//    tft.println("Lat: ");
     double lat = gps.location.lat();
-    tft.println(lat,6);
-
-    tft.println("Lng: ");
+//    tft.println(lat);
+//
+//    tft.println("Lng: ");
     double lng = gps.location.lat();
-    tft.println(lng,6);
+//    tft.println(lng);
+//
+//    tft.println("Speed: ");
+//    tft.println(gps.speed.kmph());
+//    
+//    tft.println("SAT:");
+//    tft.println(gps.satellites.value());
+//
+//    tft.println("ALT:");
+//    tft.println(gps.altitude.meters(), 0);
 
-    tft.println("Speed: ");
-    tft.println(gps.speed.kmph());
-    
-    tft.println("SAT:");
-    tft.println(gps.satellites.value());
-
-    tft.println("ALT:");
-    tft.println(gps.altitude.meters(), 0);
-
-    if (WiFi.status() == WL_CONNECTED and halfSecond >=30){
-      halfSecond = 0;
       httpPostToThingSpeak(currentID,lat,lng);
-    }
-    else{
-      Serial.println("WiFi Disconnected");
-    }
   }
   else
   {
     tft.println("No Signal From Satellite");
+    tft.print("Satellite : ");
+    tft.println(gps.satellites.value());
   }  
 }
 
@@ -155,8 +155,6 @@ void loop() {
     if(newData == true)
     {
       newData = false;
-      tft.print("Satellite : ");
-      tft.println(gps.satellites.value());
       print_speed();
     }
     else
@@ -166,23 +164,22 @@ void loop() {
     
     if(rfid.PICC_IsNewCardPresent()){
       if (rfid.PICC_ReadCardSerial()) { // NUID has been readed
-      MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
-      tft.print("RFID/NFC: ");
-      tft.println(rfid.PICC_GetTypeName(piccType));
-
-      // print UID in tft Monitor in the hex format
-      tft.print("UID:");
-      for (int i = 0; i < rfid.uid.size; i++) {
-        tft.print(rfid.uid.uidByte[i] < 0x10 ? " 0" : " ");
-        tft.print(rfid.uid.uidByte[i], HEX);
-      }
-      tft.println();
-
-      rfid.PICC_HaltA(); // halt PICC
-      rfid.PCD_StopCrypto1(); // stop encryption on PCD
-      currentID = "";
-      scan = !scan;
-      LINE.notify("Your Package Arrived");
+        tft.fillScreen(TFT_BLACK);
+        tft.setCursor(0, 0, 2);  
+        MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
+        tft.print("RFID/NFC: ");
+        tft.println(rfid.PICC_GetTypeName(piccType));
+  
+        // print UID in tft Monitor in the hex format
+        tft.print("UID:");
+        tft.print(currentID);
+        tft.println();
+  
+        rfid.PICC_HaltA(); // halt PICC
+        rfid.PCD_StopCrypto1(); // stop encryption on PCD
+        currentID = "";
+        scan = !scan;
+        LINE.notify("Your Package Arrived");
       }
     }
   }
@@ -196,13 +193,12 @@ void loop() {
   if (rfid.PICC_ReadCardSerial()) { // NUID has been readed
     tft.setCursor(0, 0, 2);
     MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
-    tft.print("ประเภทของ RFID/NFC: ");
+    tft.print("RFID/NFC: ");
     tft.println(rfid.PICC_GetTypeName(piccType));
 
-    // print UID in tft Monitor in the hex format
     tft.print("UID:");
     for (int i = 0; i < rfid.uid.size; i++) {
-      zeroOrSpace = rfid.uid.uidByte[i] < 0x10 ? " 0" : " ";
+      zeroOrSpace = rfid.uid.uidByte[i] < 0x10 ? "0" : "";
       currentID = currentID + zeroOrSpace;
       currentID = currentID + rfid.uid.uidByte[i];
     }
