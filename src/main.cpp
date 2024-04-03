@@ -65,10 +65,8 @@ void setup(void) {
 void httpPostToThingSpeak(String rfids,float lati, float longi) {
   HTTPClient https;
   //Prepare Http
-  tft.println(String(lati,6));
-  tft.println(String(longi,6));
   String STR_HTTP = "https://api.thingspeak.com/update?api_key=B9N3YB53DRL3NG2C&field1=" + rfids + "&field2=" + String(lati,6) + "&field3=" + String(longi,6);
-  tft.println(STR_HTTP);
+  Serial.println(STR_HTTP);
 
   if (https.begin(STR_HTTP)) { // HTTPS
     Serial.print("[HTTPS] GET...\n");
@@ -90,7 +88,7 @@ void print_speed(){
     tft.println(lat,6);
 
     tft.println("Lng: ");
-    double lng = gps.location.lat();
+    double lng = gps.location.lng();
     tft.println(lng,6);
 
     tft.println("Speed: ");
@@ -180,9 +178,10 @@ void loop() {
     
           rfid.PICC_HaltA(); // halt PICC
           rfid.PCD_StopCrypto1(); // stop encryption on PCD
-          currentID = "";
+    
           scan = !scan;
-          LINE.notify("Your Package Arrived");
+          LINE.notify("Package " + currentID + " Arrived");
+          currentID = "";
         }else{
           rfid.PICC_HaltA(); // halt PICC
           rfid.PCD_StopCrypto1(); // stop encryption on PCD
@@ -215,7 +214,7 @@ void loop() {
     rfid.PICC_HaltA(); // halt PICC
     rfid.PCD_StopCrypto1(); // stop encryption on PCD
 
-    LINE.notify("Your Package is on the way");
+    LINE.notify("Package " + currentID + " is on the way");
 
     scan = !scan;
     delay(2000);
